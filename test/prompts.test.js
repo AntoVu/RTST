@@ -1,33 +1,34 @@
 const test = require('node:test');
 const assert = require('node:assert');
-const { buildTranslateRequest, buildDraftRequest } = require('../prompts.js');
+const { buildTranslateRequest, buildDraftRequest, MODEL } = require('../prompts.js');
 
 const history = [
   { es: 'Hola, ¿tienen el carro rojo?', en: 'Hi, do you have the red car?', reply: { reply_es: 'Sí, lo tenemos.', reply_en: 'Yes, we have it.' } },
   { es: '¿Y el azul?', en: null, reply: null },
 ];
 
-test('translate uses haiku and includes the text to translate', () => {
-  const req = buildTranslateRequest('¿Cuánto cuesta?', history);
-  assert.strictEqual(req.model, 'claude-haiku-4-5');
-  const msg = req.messages.at(-1).content;
+test('requests are non-streaming, thinking off, on the local model', () => {
+  for (const req of [buildTranslateRequest('Hola', []), buildDraftRequest('Hola', [], '')]) {
+    assert.strictEqual(req.model, MODEL);
+    assert.strictEqual(req.stream, false);
+    assert.strictEqual(req.think, false);
+    assert.strictEqual(req.messages[0].role, 'system');
+  }
+});
+
+test('translate includes the text and recent history', () => {
+  const msg = buildTranslateRequest('¿Cuánto cuesta?', history).messages.at(-1).content;
   assert.match(msg, /¿Cuánto cuesta\?/);
   assert.match(msg, /¿tienen el carro rojo\?/, 'recent history is included for context');
 });
 
-test('translate with no history still works', () => {
-  const req = buildTranslateRequest('Hola', []);
-  assert.strictEqual(req.messages.length, 1);
-  assert.doesNotMatch(req.messages[0].content, /Recent conversation/);
+test('translate with no history has no history section', () => {
+  assert.doesNotMatch(buildTranslateRequest('Hola', []).messages.at(-1).content, /Recent conversation/);
 });
 
-test('draft uses opus with low effort and puts the context file in a cached system block', () => {
+test('draft puts the context file in the system prompt', () => {
   const req = buildDraftRequest('¿Cuánto cuesta?', history, 'I sell used cars. Prices $8-15k.');
-  assert.strictEqual(req.model, 'claude-opus-5');
-  assert.strictEqual(req.output_config.effort, 'low');
-  const ctx = req.system.at(-1);
-  assert.match(ctx.text, /I sell used cars/);
-  assert.deepStrictEqual(ctx.cache_control, { type: 'ephemeral' });
+  assert.match(req.messages[0].content, /I sell used cars/);
 });
 
 test('draft history keeps order and shows what the user replied', () => {
@@ -36,7 +37,6 @@ test('draft history keeps order and shows what the user replied', () => {
   assert.ok(iRed >= 0 && iRed < iReply && iReply < iBlue && iBlue < iNew, 'turns appear in order, latest message last');
 });
 
-test('draft without a context file says so instead of sending an empty block', () => {
-  const req = buildDraftRequest('Hola', [], '');
-  assert.match(req.system.at(-1).text, /no context/i);
+test('draft without a context file says so', () => {
+  assert.match(buildDraftRequest('Hola', [], '').messages[0].content, /no context/i);
 });

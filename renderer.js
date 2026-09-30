@@ -2,7 +2,7 @@ const $ = (id) => document.getElementById(id);
 const HOLD_MS = 300;       // press longer than this = hold-to-talk
 const MIN_AUDIO_S = 0.3;   // ignore accidental blips
 
-const history = [];        // [{ es, en, reply }] oldest first, sent to Claude as context
+const history = [];        // [{ es, en, reply }] oldest first, sent to the model as context
 let settings = {};
 let rec = null;            // { chunks, peak, endpointer, pressAt } while listening
 let busy = false;          // transcribing
@@ -158,8 +158,6 @@ function scrollDown() { $('chat').scrollTop = $('chat').scrollHeight; }
 
 // ---------- settings ----------
 function showSettings() {
-  $('api-key').value = '';
-  $('api-key').placeholder = settings.hasKey ? 'Saved (leave blank to keep)' : 'sk-ant-...';
   $('context-path').textContent = settings.contextPath || 'None chosen';
   $('threshold').value = settings.threshold;
   $('threshold-out').textContent = settings.threshold;
@@ -174,7 +172,6 @@ $('pick-context').onclick = async () => {
 };
 $('save-settings').onclick = async () => {
   settings = await window.api.setSettings({
-    apiKey: $('api-key').value || undefined,
     threshold: Number($('threshold').value),
     silenceMs: Math.round(Number($('silence').value) * 1000),
   });
@@ -189,7 +186,7 @@ $('clear-chat').onclick = () => {
 // ---------- start ----------
 (async () => {
   settings = await window.api.getSettings();
-  if (!settings.hasKey) showSettings();
+  if (!settings.contextPath) showSettings();
   try {
     await initAudio();
   } catch (e) {

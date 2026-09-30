@@ -1,0 +1,24 @@
+{
+  "name": "rtst",
+  "version": "1.0.0",
+  "description": "Listens to Spanish desktop audio, translates it, and drafts replies with Claude",
+  "main": "main.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "start": "set ELECTRON_RUN_AS_NODE=&& electron .",
+    "test": "node --test"
+  },
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
+    "@huggingface/transformers": "^4.3.0",
+    "electron": "^44.5.1",
+    "zod": "^4.6.5"
+  },
+  "private": true
+}

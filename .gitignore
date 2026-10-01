@@ -3,3 +3,6 @@ out/
 *.wav
 spike/
 docs/
+
+context.*
+!context.example.md

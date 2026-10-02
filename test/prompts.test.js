@@ -71,3 +71,31 @@ test('summary includes the transcript with translations', () => {
   assert.match(msg, /Hola, me llamo María\./);
   assert.match(msg, /Hi, my name is María\./);
 });
+
+const { parseSidebarQuestions } = require('../prompts.js');
+
+test('sidebar questions: grouped by subheading, "es | en" lines, section ends at the next top-level heading', () => {
+  const ctx = [
+    '# About me', 'I am Sam.',
+    '# Sidebar questions',
+    '- ¿Cómo estás? | How are you?',
+    '## Their family',
+    '- ¿Tienes hermanos? | Do you have siblings?',
+    '* ¿Tienes mascotas?',
+    'not a list item, ignored',
+    '## Typical families',
+    '- ¿Es una familia típica? | Is it a typical family?',
+    '# Tone', '- Use usted. | not a question',
+  ].join('\n');
+  assert.deepStrictEqual(parseSidebarQuestions(ctx), [
+    { title: null, items: [{ es: '¿Cómo estás?', en: 'How are you?' }] },
+    { title: 'Their family', items: [{ es: '¿Tienes hermanos?', en: 'Do you have siblings?' }, { es: '¿Tienes mascotas?', en: '' }] },
+    { title: 'Typical families', items: [{ es: '¿Es una familia típica?', en: 'Is it a typical family?' }] },
+  ]);
+});
+
+test('sidebar questions: none when the section is missing or empty', () => {
+  assert.deepStrictEqual(parseSidebarQuestions('# About me\n- hi'), []);
+  assert.deepStrictEqual(parseSidebarQuestions(''), []);
+  assert.deepStrictEqual(parseSidebarQuestions('## Sidebar questions\n### Empty group\n'), []);
+});

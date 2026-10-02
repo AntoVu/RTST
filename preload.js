@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('api', {
   translate: (text, history) => ipcRenderer.invoke('translate', text, history),
   draft: (text, history) => ipcRenderer.invoke('draft', text, history),
   suggest: (history) => ipcRenderer.invoke('suggest', history),
+  questions: () => ipcRenderer.invoke('questions'),
   saveMeeting: (id, history) => ipcRenderer.invoke('meeting:save', id, history),
   endMeeting: (id, history) => ipcRenderer.invoke('meeting:end', id, history),
   getSettings: () => ipcRenderer.invoke('settings:get'),

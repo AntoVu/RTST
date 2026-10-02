@@ -17,3 +17,11 @@ Prices, hours, policies, or other details I might be asked about.
 
 # Tone
 e.g. Respectful but friendly. Use "usted".
+
+# Sidebar questions
+Questions you want one click away. Each "## heading" becomes a group in the sidebar; write "Spanish | English".
+## Small talk
+- ¿Cómo estás hoy? | How are you today?
+## About their family
+- ¿Cómo es tu familia? | What is your family like?
+- ¿Tienes hermanos? | Do you have siblings?

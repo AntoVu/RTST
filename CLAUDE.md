@@ -16,7 +16,8 @@ Original design spec (Claude-based, since replaced by Ollama; local only, `docs/
 
 ## Layout
 - `main.js`: window, loopback-audio grant (`setDisplayMediaRequestHandler` with `audio: 'loopback'`), Whisper, Ollama calls (`/api/chat`), settings in `%APPDATA%/rtst/settings.json`.
-- `prompts.js`: pure Ollama request builders (translate, draft, suggest, summary). One model (`gemma4:e4b`) serves all of them; JSON answers use zod schemas via Ollama `format`.
+- `prompts.js`: pure Ollama request builders (translate, draft, suggest, summary), plus `parseSidebarQuestions` for the context file's
+  `# Sidebar questions` section (`- es | en` lines, `##` groups); the renderer re-fetches it on window focus. One model (`gemma4:e4b`) serves all of them; JSON answers use zod schemas via Ollama `format`.
   `NUM_CTX` must be identical on every request, or Ollama reloads the model.
 - `pronounce.js`: rule-based Spanish-to-English respelling with stress. The small LLM was unreliable at this, so the model doesn't produce pronunciation.
 - `endpoint.js`: pause detection (`createEndpointer`) and the Listen button state machine (`createListenButton`: tap = auto, hold = until release, double-tap = locked). Shared by the renderer (plain script) and tests.

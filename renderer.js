@@ -234,6 +234,25 @@ function starterItem(es, en) {
 }
 $('quick').append(...QUICK_PHRASES.map(([es, en]) => starterItem(es, en)));
 
+// The context file's "# Sidebar questions" section. Re-read whenever the window regains focus,
+// so edits to the file show up after switching back from the editor.
+async function loadQuestions() {
+  const groups = await window.api.questions();
+  $('context-questions').hidden = !groups.length;
+  $('question-groups').replaceChildren(...groups.map((g) => {
+    const details = document.createElement('details');
+    details.open = true;
+    const summary = document.createElement('summary');
+    summary.textContent = g.title || 'Questions';
+    const ul = document.createElement('ul');
+    ul.className = 'starters';
+    ul.append(...g.items.map((q) => starterItem(q.es, q.en)));
+    details.append(summary, ul);
+    return details;
+  }));
+}
+window.addEventListener('focus', loadQuestions);
+
 $('suggest').onclick = async () => {
   const btn = $('suggest');
   btn.disabled = true;
@@ -285,6 +304,7 @@ $('threshold').oninput = () => { $('threshold-out').textContent = $('threshold')
 $('pick-context').onclick = async () => {
   settings = await window.api.pickContext();
   $('context-path').textContent = settings.contextPath || 'None chosen';
+  loadQuestions();
 };
 $('open-data').onclick = () => window.api.openDataFolder();
 $('save-settings').onclick = async () => {
@@ -302,6 +322,7 @@ $('clear-chat').onclick = () => {
 // ---------- start ----------
 (async () => {
   settings = await window.api.getSettings();
+  loadQuestions();
   if (!settings.contextPath) showSettings();
   try {
     await initAudio();

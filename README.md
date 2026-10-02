@@ -87,6 +87,14 @@ Replies use simple, student-level Spanish, and numbers are written as words so y
 ### The sidebar: things to say
 
 - **Suggestions**: click **Suggest** for 5 questions or comments that fit your context and the conversation so far (about 4 seconds).
+- **From your context**: your own prepared questions, for example ones an assignment requires. Add a `# Sidebar questions` section to your context file; each `##` subheading becomes a collapsible group:
+  ```markdown
+  # Sidebar questions
+  ## Their family
+  - ¿Cómo es tu familia? | What is your family like?
+  - ¿Tienes hermanos? | Do you have siblings?
+  ```
+  The section is re-read whenever you switch back to the app, so you can edit it mid-meeting.
 - **Quick phrases**: always-available basics like "¿Puede repetirlo, por favor?" and "¿Puede hablar más despacio?"
 
 Clicking any of them adds it to the chat as your message, with pronunciation, so you can read it aloud.

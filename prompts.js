@@ -81,4 +81,26 @@ function buildSummaryRequest(history) {
   return chat(SUMMARY_INSTRUCTIONS, `Conversation:\n${formatHistory(history, true)}`, 0.2);
 }
 
-module.exports = { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, formatHistory, MODEL, NUM_CTX };
+// The context file's "# Sidebar questions" section becomes a sidebar category:
+// "- Spanish | English" lines, grouped by deeper subheadings. It ends at the next heading of the same or higher level.
+function parseSidebarQuestions(contextText) {
+  const groups = [];
+  let level = 0; // heading level of the section; 0 = not inside it
+  for (const line of (contextText || '').split(/\r?\n/)) {
+    const h = line.match(/^(#{1,6})\s+(.*?)\s*$/);
+    if (h) {
+      if (level && h[1].length <= level) break;
+      if (!level && /^sidebar questions$/i.test(h[2])) level = h[1].length;
+      else if (level) groups.push({ title: h[2], items: [] });
+      continue;
+    }
+    const item = level && line.match(/^\s*[-*]\s+(.+?)\s*$/);
+    if (!item) continue;
+    if (!groups.length) groups.push({ title: null, items: [] });
+    const [es, en = ''] = item[1].split(/\s+\|\s+/);
+    groups.at(-1).items.push({ es, en });
+  }
+  return groups.filter((g) => g.items.length);
+}
+
+module.exports = { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, formatHistory, parseSidebarQuestions, MODEL, NUM_CTX };

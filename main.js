@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, desktopCapturer, dialog, shell } =
 const fs = require('node:fs');
 const path = require('node:path');
 const { z } = require('zod');
-const { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, MODEL } = require('./prompts.js');
+const { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, parseSidebarQuestions, MODEL } = require('./prompts.js');
 
 // ponytail: if turbo is too slow on the CPU fallback, switch to onnx-community/whisper-small
 const WHISPER_MODEL = 'onnx-community/whisper-large-v3-turbo';
@@ -126,6 +126,8 @@ ipcMain.handle('draft', (_e, text, history) =>
 
 ipcMain.handle('suggest', async (_e, history) =>
   (await ollamaJson(buildSuggestRequest(history, readContext(), readMemory()), SuggestSchema)).suggestions.slice(0, 5));
+
+ipcMain.handle('questions', () => parseSidebarQuestions(readContext()));
 
 ipcMain.handle('meeting:save', (_e, meetingId, history) => {
   fs.writeFileSync(transcriptPath(meetingId), transcriptMarkdown(meetingId, history));

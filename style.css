@@ -32,6 +32,10 @@ button:disabled { opacity: .6; cursor: default; }
 .starters small { color: var(--muted); font-size: 12px; }
 .starters .hint { color: var(--muted); font-size: 13px; }
 .starters .error { color: var(--err); font-size: 13px; }
+#sidebar summary { cursor: pointer; margin-bottom: 8px; }
+#sidebar summary h2 { display: inline; }
+#question-groups summary { font-size: 13px; color: var(--text); }
+#question-groups details + details { margin-top: 10px; }
 
 #chat { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 #empty { color: var(--muted); text-align: center; margin: auto; }

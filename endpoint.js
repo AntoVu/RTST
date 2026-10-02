@@ -13,4 +13,25 @@ function createEndpointer({ threshold, silenceMs, maxMs }) {
   };
 }
 
-if (typeof module !== 'undefined') module.exports = { createEndpointer };
+// Listen button: tap = auto-stop at a pause, hold = until release, double-tap = locked until the next tap.
+// press/release return the action for the renderer: 'start' | 'auto' | 'lock' | 'stop' | null.
+function createListenButton({ holdMs, doubleTapMs }) {
+  let state = 'idle', pressAt = 0, tapAt = 0; // state: idle | pressing | auto | locked
+  return {
+    press(now) {
+      if (state === 'idle') { state = 'pressing'; pressAt = now; return 'start'; }
+      if (state === 'auto' && now - tapAt <= doubleTapMs) { state = 'locked'; return 'lock'; }
+      if (state === 'auto' || state === 'locked') { state = 'idle'; return 'stop'; }
+      return null;
+    },
+    release(now) {
+      if (state !== 'pressing') return null;
+      if (now - pressAt < holdMs) { state = 'auto'; tapAt = now; return 'auto'; }
+      state = 'idle';
+      return 'stop';
+    },
+    reset() { state = 'idle'; },
+  };
+}
+
+if (typeof module !== 'undefined') module.exports = { createEndpointer, createListenButton };

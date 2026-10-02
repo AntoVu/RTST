@@ -9,25 +9,50 @@
 <body>
   <header>
     <h1>RTST <span>Spanish ⇄ English</span></h1>
-    <button id="open-settings" aria-label="Settings">Settings</button>
+    <div class="header-actions">
+      <button id="end-meeting">End meeting</button>
+      <button id="open-settings">Settings</button>
+    </div>
   </header>
 
-  <main id="chat" aria-live="polite">
-    <p id="empty">Tap <b>Listen</b> (or Space) and it stops when the speaker pauses.<br>Hold it to keep listening until you let go.</p>
-  </main>
+  <div class="layout">
+    <aside id="sidebar" aria-label="Things to say">
+      <section>
+        <div class="section-head">
+          <h2>Suggestions</h2>
+          <button id="suggest">Suggest</button>
+        </div>
+        <ul id="suggestions" class="starters"><li class="hint">Ideas based on your context and the conversation.</li></ul>
+      </section>
+      <section>
+        <h2>Quick phrases</h2>
+        <ul id="quick" class="starters"></ul>
+      </section>
+    </aside>
 
-  <footer>
-    <div id="status" role="status"></div>
-    <div class="controls">
-      <div id="meter" aria-hidden="true"><div id="level"></div></div>
-      <button id="listen">Listen</button>
+    <div class="conversation">
+      <main id="chat" aria-live="polite">
+        <p id="empty">
+          <b>Tap</b> Listen (or Space): stops when they pause.<br>
+          <b>Hold</b>: listens until you let go.<br>
+          <b>Double-tap</b>: listens through any pause until you tap again.
+        </p>
+      </main>
+
+      <footer>
+        <div id="status" role="status"></div>
+        <div class="controls">
+          <div id="meter" aria-hidden="true"><div id="level"></div></div>
+          <button id="listen">Listen</button>
+        </div>
+      </footer>
     </div>
-  </footer>
+  </div>
 
   <dialog id="settings">
     <form method="dialog">
       <h2>Settings</h2>
-      <label>Context file (who you are, your business, prices, FAQs)
+      <label>Context file (who you are, the situation, your goals)
         <span class="row"><span id="context-path">None chosen</span><button type="button" id="pick-context">Choose…</button></span>
       </label>
       <label>Speech threshold <output id="threshold-out"></output>
@@ -37,8 +62,11 @@
       <label>Pause before auto-stop (seconds)
         <input id="silence" type="number" min="0.4" max="5" step="0.1">
       </label>
+      <label>Memory and meeting transcripts
+        <span class="row"><small>memory.md and meetings/</small><button type="button" id="open-data">Open folder</button></span>
+      </label>
       <div class="row">
-        <button type="button" id="clear-chat" class="danger">Clear conversation</button>
+        <button type="button" id="clear-chat" class="danger">Clear without saving notes</button>
         <button value="save" id="save-settings">Save</button>
       </div>
     </form>
@@ -52,6 +80,7 @@
   </template>
 
   <script src="endpoint.js"></script>
+  <script src="pronounce.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

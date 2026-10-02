@@ -38,3 +38,41 @@ test('time is measured from the first feed', () => {
   assert.strictEqual(ep.feed(0.1, 55000), 'continue');
   assert.strictEqual(ep.feed(0.1, 60000), 'stop');
 });
+
+const { createListenButton } = require('../endpoint.js');
+const newButton = () => createListenButton({ holdMs: 300, doubleTapMs: 400 });
+
+test('tap starts auto-listening', () => {
+  const b = newButton();
+  assert.strictEqual(b.press(0), 'start');
+  assert.strictEqual(b.release(100), 'auto');
+});
+
+test('hold stops on release, however long', () => {
+  const b = newButton();
+  assert.strictEqual(b.press(0), 'start');
+  assert.strictEqual(b.release(90000), 'stop');
+});
+
+test('a later tap while auto-listening stops', () => {
+  const b = newButton();
+  b.press(0); b.release(100);
+  assert.strictEqual(b.press(2000), 'stop');
+  assert.strictEqual(b.release(2100), null, 'release of the stopping tap does nothing');
+});
+
+test('double-tap locks until the next tap', () => {
+  const b = newButton();
+  b.press(0); b.release(100);
+  assert.strictEqual(b.press(350), 'lock');
+  assert.strictEqual(b.release(420), null);
+  assert.strictEqual(b.press(60000), 'stop');
+  assert.strictEqual(b.release(60100), null);
+});
+
+test('reset after an automatic stop lets the next press start fresh', () => {
+  const b = newButton();
+  b.press(0); b.release(100);
+  b.reset();
+  assert.strictEqual(b.press(200), 'start');
+});

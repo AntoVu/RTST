@@ -57,7 +57,7 @@ Copy [context.example.md](context.example.md) to `context.md`, fill it in, and c
 - anything you know about the other person
 - the tone you want (for example, polite "usted")
 
-The model answers from this file and is told never to make up facts about you. When the file doesn't cover a question, it improvises a short, polite reply, and the reply bubble shows a yellow **generic** badge. Add the answer to your context file if you want a real one next time. The file is re-read on every reply, so you can edit it mid-call.
+The model answers from this file and is told never to make up facts about you. When the file doesn't cover a question, it improvises, and the small local model can't reliably tell when it has (it may say your favorite color is blue). **Read the English line before you speak**, and add any missing facts to your context file. Short bullet points work best: one fact per line, no duplicates. The file is re-read on every reply, so you can edit it mid-call.
 
 Files named `context.*` (except the example) are ignored by git, so your personal details aren't committed by accident.
 

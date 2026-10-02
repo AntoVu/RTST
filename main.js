@@ -2,7 +2,7 @@ const { app, BrowserWindow, ipcMain, session, desktopCapturer, dialog, shell } =
 const fs = require('node:fs');
 const path = require('node:path');
 const { z } = require('zod');
-const { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, parseSidebarQuestions, MODEL } = require('./prompts.js');
+const { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, parseSidebarQuestions, stripSidebarQuestions, MODEL } = require('./prompts.js');
 
 // ponytail: if turbo is too slow on the CPU fallback, switch to onnx-community/whisper-small
 const WHISPER_MODEL = 'onnx-community/whisper-large-v3-turbo';
@@ -10,7 +10,7 @@ const OLLAMA = 'http://127.0.0.1:11434';
 const DEFAULTS = { threshold: 0.01, silenceMs: 1200, contextPath: null };
 const MEMORY_CHARS = 6000; // ponytail: only the newest memory is sent; re-summarize memory.md if old meetings matter
 
-const DraftSchema = z.object({ reply_es: z.string(), reply_en: z.string(), used_context: z.boolean() });
+const DraftSchema = z.object({ reply_es: z.string(), reply_en: z.string() });
 const SuggestSchema = z.object({ suggestions: z.array(z.object({ es: z.string(), en: z.string() })) });
 
 let win, asr, statusText = 'Starting…';
@@ -25,6 +25,7 @@ let settings;
 
 const readFile = (p) => { try { return fs.readFileSync(p, 'utf8'); } catch { return ''; } };
 const readContext = () => (settings.contextPath ? readFile(settings.contextPath) : '');
+const promptContext = () => stripSidebarQuestions(readContext()); // what the model sees
 const readMemory = () => readFile(dataPath('memory.md')).slice(-MEMORY_CHARS);
 
 // 2026-10-02_15-30-05 -> 2026-10-02 15:30
@@ -66,7 +67,7 @@ async function ollamaJson(body, schema) {
 
 // Loads the model and pre-processes the context + memory prefix, so the first real reply is fast.
 function warmUp() {
-  const req = buildDraftRequest('Hola', [], readContext(), readMemory());
+  const req = buildDraftRequest('Hola', [], promptContext(), readMemory());
   return ollamaChat({ ...req, options: { ...req.options, num_predict: 1 } });
 }
 
@@ -122,10 +123,10 @@ ipcMain.handle('transcribe', async (_e, pcm) => {
 ipcMain.handle('translate', (_e, text, history) => ollamaChat(buildTranslateRequest(text, history)));
 
 ipcMain.handle('draft', (_e, text, history) =>
-  ollamaJson(buildDraftRequest(text, history, readContext(), readMemory()), DraftSchema));
+  ollamaJson(buildDraftRequest(text, history, promptContext(), readMemory()), DraftSchema));
 
 ipcMain.handle('suggest', async (_e, history) =>
-  (await ollamaJson(buildSuggestRequest(history, readContext(), readMemory()), SuggestSchema)).suggestions.slice(0, 5));
+  (await ollamaJson(buildSuggestRequest(history, promptContext(), readMemory()), SuggestSchema)).suggestions.slice(0, 5));
 
 ipcMain.handle('questions', () => parseSidebarQuestions(readContext()));
 

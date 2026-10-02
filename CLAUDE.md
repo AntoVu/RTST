@@ -34,5 +34,8 @@ Original design spec (Claude-based, since replaced by Ollama; local only, `docs/
 - The draft prompt asks for numbers written as words so the pronunciation line covers them.
 - The drafter gets the whole meeting (capped at 200 messages). Prompt order is kept stable (instructions, context, memory, transcript, newest) so Ollama's
   prefix cache keeps replies ~1.3-2.3 s even late in a 60-message meeting. Startup sends a 1-token draft to pre-process the context and memory (first reply ~1.7 s instead of ~3.5 s).
+- The model gets the context file minus `# Sidebar questions` (`stripSidebarQuestions`); those lists were 43% of the prompt and pure noise.
+- No "did I use the context" flag: gemma4:e4b's self-reports were wrong both ways (flagged correct answers, missed invented ones), so the
+  generic badge was removed. Answer quality depends on the context file being short, deduplicated, first-person bullets.
 - Whisper uses `chunk_length_s: 30`; without it, audio past 30 s was silently dropped.
 - Bash/Write tool input un-escapes `\u` and `\d` sequences: write regexes with backslashes through the Edit tool.

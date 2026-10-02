@@ -144,13 +144,12 @@ async function stopListening() {
 // ---------- chat ----------
 const cloneTpl = (id) => $(id).content.firstElementChild.cloneNode(true);
 
-function fillMine(el, es, en, generic = false) {
+function fillMine(el, es, en) {
   const esEl = el.querySelector('.es');
   esEl.className = 'es';
   esEl.textContent = es;
   el.querySelector('.pron').textContent = pronounce(es);
   el.querySelector('.en').textContent = en;
-  el.querySelector('.badge').hidden = !generic;
 }
 
 function addTurn(es, tHeard) {
@@ -182,7 +181,7 @@ function addTurn(es, tHeard) {
     // ponytail: a draft counts as said even if the user picks a starter instead; add a "skip" toggle if that confuses replies
     mine.es = r.reply_es;
     mine.en = r.reply_en;
-    fillMine(me, r.reply_es, r.reply_en, !r.used_context);
+    fillMine(me, r.reply_es, r.reply_en);
     saveMeeting();
     timings.reply = `reply ${secs(tHeard, performance.now())}`;
     report();

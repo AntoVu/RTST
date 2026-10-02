@@ -99,3 +99,16 @@ test('sidebar questions: none when the section is missing or empty', () => {
   assert.deepStrictEqual(parseSidebarQuestions(''), []);
   assert.deepStrictEqual(parseSidebarQuestions('## Sidebar questions\n### Empty group\n'), []);
 });
+
+const { stripSidebarQuestions } = require('../prompts.js');
+
+test('strip sidebar questions: removes the section and its subgroups, keeps everything else', () => {
+  const ctx = '# Me\nI am Sam.\n# Sidebar questions\n## Small talk\n- ¿Hola? | Hi?\n# Tone\nFriendly.';
+  assert.strictEqual(stripSidebarQuestions(ctx), '# Me\nI am Sam.\n# Tone\nFriendly.');
+});
+
+test('strip sidebar questions: section at the end, or no section at all', () => {
+  assert.strictEqual(stripSidebarQuestions('# Me\nI am Sam.\n\n# Sidebar questions\n- ¿Hola? | Hi?\n'), '# Me\nI am Sam.\n');
+  assert.strictEqual(stripSidebarQuestions('# Me\nI am Sam.'), '# Me\nI am Sam.');
+  assert.strictEqual(stripSidebarQuestions(''), '');
+});

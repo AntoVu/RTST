@@ -48,7 +48,7 @@ const DRAFT_INSTRUCTIONS = `You help the user hold a live Spanish conversation. 
 
 - Remember everything said in this conversation (names, details, what was already discussed) and stay consistent with it.
 - Answer from the user's context and the memory from past meetings. Never invent facts about the user that are not there.
-- If they don't cover the question, give a short, polite, natural reply (or ask a clarifying question) and set used_context to false.
+- If they don't cover the question, give a short, polite, natural reply (or ask a clarifying question).
 - One to three short sentences. When natural, end with a short follow-up question to keep the conversation going.
 - ${SPEAKING_RULES}
 - reply_es: the Spanish to say. reply_en: its English meaning.`;
@@ -103,4 +103,18 @@ function parseSidebarQuestions(contextText) {
   return groups.filter((g) => g.items.length);
 }
 
-module.exports = { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, formatHistory, parseSidebarQuestions, MODEL, NUM_CTX };
+// The context file minus its "# Sidebar questions" section: those lists are for the user, and as prompt text they only
+// add noise and tokens.
+function stripSidebarQuestions(contextText) {
+  const kept = [];
+  let level = 0; // heading level of the section being skipped; 0 = keeping lines
+  for (const line of (contextText || '').split(/\r?\n/)) {
+    const h = line.match(/^(#{1,6})\s+(.*?)\s*$/);
+    if (h && level && h[1].length <= level) level = 0;
+    if (h && !level && /^sidebar questions$/i.test(h[2])) level = h[1].length;
+    if (!level) kept.push(line);
+  }
+  return kept.join('\n');
+}
+
+module.exports = { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, formatHistory, parseSidebarQuestions, stripSidebarQuestions, MODEL, NUM_CTX };

@@ -69,8 +69,11 @@ Files named `context.*` (except the example) are ignored by git, so your persona
 | **Hold** Listen (or hold Space) | Listens until you let go, however long. Sliding the mouse off the button doesn't stop it |
 | **Double-tap** Listen (or Space) | **Locked**: listens through any pause until you tap once more. Best for long, unpredictable turns |
 | Tap again while listening | Stops right away |
+| **Auto-listen** checkbox (next to Listen) | Listening starts by itself whenever audio plays louder than the speech threshold, then stops at a pause, like a tap. It keeps listening while the previous turn is transcribed, so nothing is missed |
 
 The Space bar only works while the RTST window is focused. Long recordings (several minutes) are transcribed in full.
+
+With Auto-listen on, mute other sounds on your PC (anything louder than the threshold starts listening). If the speaker gets split into several messages, raise **Pause before auto-stop** in Settings (2 seconds works well for slow speakers). Short remarks with no question in them ("Sí.", "Bueno.") are translated but get no suggested reply, since the speaker is usually still talking.
 
 After you stop, Spanish text appears in about a second, the English shortly after, and the suggested reply a second or two later. The status line shows the exact timings.
 

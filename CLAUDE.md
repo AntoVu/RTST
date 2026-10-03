@@ -38,4 +38,8 @@ Original design spec (Claude-based, since replaced by Ollama; local only, `docs/
 - No "did I use the context" flag: gemma4:e4b's self-reports were wrong both ways (flagged correct answers, missed invented ones), so the
   generic badge was removed. Answer quality depends on the context file being short, deduplicated, first-person bullets.
 - Whisper uses `chunk_length_s: 30`; without it, audio past 30 s was silently dropped.
+- Auto-listen (`settings.autoListen`): any audio chunk above the threshold starts a tap-style recording, with ~0.5 s of pre-roll.
+  Transcriptions run through a promise queue, so listening resumes while the last clip is transcribed. A clip needs 0.3 s above the threshold (blips make Whisper hallucinate "Gracias.").
+- Draft prompt: tuned by replaying a real meeting's coach lines (the old "end with a follow-up question" rule made every reply a question and repeated them).
+  The model ignored "reply 'Sí.' to fillers", so the renderer skips drafting for no-question messages of 3 words or fewer (`isFiller`).
 - Bash/Write tool input un-escapes `\u` and `\d` sequences: write regexes with backslashes through the Edit tool.

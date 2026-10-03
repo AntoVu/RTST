@@ -7,7 +7,7 @@ const { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSumm
 // ponytail: if turbo is too slow on the CPU fallback, switch to onnx-community/whisper-small
 const WHISPER_MODEL = 'onnx-community/whisper-large-v3-turbo';
 const OLLAMA = 'http://127.0.0.1:11434';
-const DEFAULTS = { threshold: 0.01, silenceMs: 1200, contextPath: null };
+const DEFAULTS = { threshold: 0.01, silenceMs: 1200, contextPath: null, autoListen: false };
 const MEMORY_CHARS = 6000; // ponytail: only the newest memory is sent; re-summarize memory.md if old meetings matter
 
 const DraftSchema = z.object({ reply_es: z.string(), reply_en: z.string() });
@@ -149,11 +149,13 @@ const publicSettings = () => ({
   contextPath: settings.contextPath,
   threshold: settings.threshold,
   silenceMs: settings.silenceMs,
+  autoListen: settings.autoListen,
 });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, patch) => {
   if (typeof patch.threshold === 'number') settings.threshold = patch.threshold;
   if (typeof patch.silenceMs === 'number') settings.silenceMs = patch.silenceMs;
+  if (typeof patch.autoListen === 'boolean') settings.autoListen = patch.autoListen;
   saveSettings(settings);
   return publicSettings();
 });

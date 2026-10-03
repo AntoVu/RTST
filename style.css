@@ -56,6 +56,8 @@ footer { background: var(--panel); padding: 10px 16px 14px; }
 .controls { display: flex; gap: 12px; align-items: center; }
 #meter { flex: 1; height: 8px; background: var(--them); border-radius: 4px; overflow: hidden; }
 #level { height: 100%; width: 0; background: var(--accent); transition: width 60ms linear; }
+.auto-toggle { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; cursor: pointer; user-select: none; }
+.auto-toggle input { accent-color: var(--accent); }
 #listen {
   width: 140px; height: 52px; font-size: 18px; font-weight: 600; border-radius: 26px;
   background: var(--accent); color: #0b2a1c; border: none; user-select: none; touch-action: none;

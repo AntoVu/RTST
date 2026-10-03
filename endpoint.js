@@ -31,6 +31,7 @@ function createListenButton({ holdMs, doubleTapMs }) {
       return 'stop';
     },
     reset() { state = 'idle'; },
+    autoStart() { state = 'auto'; tapAt = -Infinity; }, // auto-listen began without a tap
   };
 }
 

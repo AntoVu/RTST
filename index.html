@@ -41,7 +41,8 @@
         <p id="empty">
           <b>Tap</b> Listen (or Space): stops when they pause.<br>
           <b>Hold</b>: listens until you let go.<br>
-          <b>Double-tap</b>: listens through any pause until you tap again.
+          <b>Double-tap</b>: listens through any pause until you tap again.<br>
+          <b>Auto-listen</b>: starts by itself whenever they talk.
         </p>
       </main>
 
@@ -49,6 +50,7 @@
         <div id="status" role="status"></div>
         <div class="controls">
           <div id="meter" aria-hidden="true"><div id="level"></div></div>
+          <label class="auto-toggle" title="Start listening by itself whenever audio plays louder than the speech threshold"><input type="checkbox" id="auto-listen"> Auto-listen</label>
           <button id="listen">Listen</button>
         </div>
       </footer>

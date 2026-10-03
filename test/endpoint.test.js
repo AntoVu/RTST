@@ -76,3 +76,10 @@ test('reset after an automatic stop lets the next press start fresh', () => {
   b.reset();
   assert.strictEqual(b.press(200), 'start');
 });
+
+test('auto-listen start acts like a tap: the next press stops, never locks', () => {
+  const b = newButton();
+  b.autoStart();
+  assert.strictEqual(b.press(50), 'stop');
+  assert.strictEqual(b.press(100), 'start');
+});

@@ -1,6 +1,7 @@
 const $ = (id) => document.getElementById(id);
-const MIN_AUDIO_S = 0.3;   // ignore accidental blips
+const MIN_SPEECH_S = 0.3;  // ignore blips: needs this much audio above the threshold
 const AUTO_MAX_MS = 60000; // tap mode cap; hold and locked modes have none
+const PREROLL_CHUNKS = 2;  // ~0.5 s kept from before a recording starts, so the first word isn't clipped
 
 const QUICK_PHRASES = [
   ['¡Hola! Mucho gusto.', 'Hi! Nice to meet you.'],
@@ -20,8 +21,10 @@ const QUICK_PHRASES = [
 const history = [];
 let meetingId = null;      // set by the first message, e.g. 2026-10-02_15-30-05
 let settings = {};
-let rec = null;            // { chunks, peak, endpointer } while listening
-let busy = false;          // transcribing
+let rec = null;            // { chunks, loud, endpointer } while listening
+let preroll = [];          // the last few chunks while not listening
+let pending = 0;           // recordings waiting for or in transcription
+let queue = Promise.resolve(); // transcriptions run one at a time, in order, while listening continues
 const button = createListenButton({ holdMs: 300, doubleTapMs: 400 });
 
 // ---------- status ----------
@@ -64,10 +67,16 @@ async function initAudio() {
     let sum = 0;
     for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
     const rms = Math.sqrt(sum / data.length);
-    $('level').style.width = rec ? `${Math.min(100, rms * 400)}%` : '0';
-    if (!rec) return;
-    rec.chunks.push(new Float32Array(data));
-    rec.peak = Math.max(rec.peak, rms);
+    $('level').style.width = `${Math.min(100, rms * 400)}%`;
+    const chunk = new Float32Array(data);
+    if (!rec && settings.autoListen && rms >= settings.threshold) {
+      startRec(autoEndpointer());
+      button.autoStart();
+      setButton('listening');
+    }
+    if (!rec) { preroll = [...preroll, chunk].slice(-PREROLL_CHUNKS); return; }
+    rec.chunks.push(chunk);
+    if (rms >= settings.threshold) rec.loud += chunk.length;
     if (rec.endpointer && rec.endpointer.feed(rms, performance.now()) === 'stop') stopListening();
   };
   source.connect(proc).connect(mute).connect(ctx.destination);
@@ -80,12 +89,18 @@ function setButton(state) {
   b.textContent = { idle: 'Listen', listening: 'Listening…', locked: 'Locked · tap to stop', processing: 'Working…' }[state];
 }
 
+function startRec(endpointer) {
+  rec = { chunks: preroll, loud: 0, endpointer };
+  preroll = [];
+}
+const autoEndpointer = () => createEndpointer({ threshold: settings.threshold, silenceMs: settings.silenceMs, maxMs: AUTO_MAX_MS });
+
 function act(action) {
   if (action === 'start') {
-    rec = { chunks: [], peak: 0, endpointer: null };
+    startRec(null);
     setButton('listening');
   } else if (action === 'auto') {
-    rec.endpointer = createEndpointer({ threshold: settings.threshold, silenceMs: settings.silenceMs, maxMs: AUTO_MAX_MS });
+    rec.endpointer = autoEndpointer();
   } else if (action === 'lock') {
     rec.endpointer = null;
     setButton('locked');
@@ -93,7 +108,7 @@ function act(action) {
     stopListening();
   }
 }
-const press = () => { if (!busy) act(button.press(performance.now())); };
+const press = () => act(button.press(performance.now()));
 const release = () => act(button.release(performance.now()));
 
 // Pointer capture keeps a hold going even if the mouse slides off the button.
@@ -109,22 +124,24 @@ document.addEventListener('keyup', (e) => {
   if (e.code === 'Space' && !typing()) release();
 });
 
-async function stopListening() {
+function stopListening() {
   const r = rec;
   rec = null;
   button.reset();
   if (!r) return;
-  const len = r.chunks.reduce((n, c) => n + c.length, 0);
-  if (len < 16000 * MIN_AUDIO_S || r.peak < settings.threshold) {
-    setButton('idle');
+  if (r.loud < 16000 * MIN_SPEECH_S) {
+    setButton(pending ? 'processing' : 'idle');
     return setStatus('No speech heard.');
   }
-  const pcm = new Float32Array(len);
+  const pcm = new Float32Array(r.chunks.reduce((n, c) => n + c.length, 0));
   let o = 0;
   for (const c of r.chunks) { pcm.set(c, o); o += c.length; }
-
-  busy = true;
+  pending++;
   setButton('processing');
+  queue = queue.then(() => transcribe(pcm));
+}
+
+async function transcribe(pcm) {
   const t0 = performance.now();
   let es;
   try {
@@ -132,8 +149,8 @@ async function stopListening() {
   } catch (e) {
     return setStatus(`Transcription failed: ${cleanErr(e)}`);
   } finally {
-    busy = false;
-    setButton('idle');
+    pending--;
+    if (!rec) setButton(pending ? 'processing' : 'idle');
   }
   if (!es) return setStatus('No speech recognized.');
   const tHeard = performance.now();
@@ -152,16 +169,16 @@ function fillMine(el, es, en) {
   el.querySelector('.en').textContent = en;
 }
 
+// A short remark with no question ("Sí.", "Bueno.", "Ah...") usually means they're still talking, so it gets no reply.
+const isFiller = (es) => !es.includes('?') && es.trim().split(/\s+/).length <= 3;
+
 function addTurn(es, tHeard) {
   $('empty')?.remove();
   const prior = history.filter((m) => m.es);
   const theirs = addMessage({ who: 'them', es, en: null });
-  const mine = addMessage({ who: 'me', es: null, en: null });
-
   const them = cloneTpl('them-tpl');
   them.querySelector('.es').textContent = es;
-  const me = cloneTpl('me-tpl');
-  $('chat').append(them, me);
+  $('chat').append(them);
   scrollDown();
 
   const timings = { heard: $('status').textContent };
@@ -177,6 +194,11 @@ function addTurn(es, tHeard) {
     report();
   });
 
+  if (isFiller(es)) return;
+  const mine = addMessage({ who: 'me', es: null, en: null });
+  const me = cloneTpl('me-tpl');
+  $('chat').append(me);
+  scrollDown();
   run(me.querySelector('.es'), () => window.api.draft(es, prior), (r) => {
     // ponytail: a draft counts as said even if the user picks a starter instead; add a "skip" toggle if that confuses replies
     mine.es = r.reply_es;
@@ -312,6 +334,9 @@ $('save-settings').onclick = async () => {
     silenceMs: Math.round(Number($('silence').value) * 1000),
   });
 };
+$('auto-listen').onchange = async () => {
+  settings = await window.api.setSettings({ autoListen: $('auto-listen').checked });
+};
 $('clear-chat').onclick = () => {
   resetChat();
   $('settings').close();
@@ -321,6 +346,7 @@ $('clear-chat').onclick = () => {
 // ---------- start ----------
 (async () => {
   settings = await window.api.getSettings();
+  $('auto-listen').checked = settings.autoListen;
   loadQuestions();
   if (!settings.contextPath) showSettings();
   try {

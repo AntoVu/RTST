@@ -3,7 +3,10 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   transcribe: (pcm) => ipcRenderer.invoke('transcribe', pcm),
   translate: (text, history) => ipcRenderer.invoke('translate', text, history),
-  draft: (text, history) => ipcRenderer.invoke('draft', text, history),
+  transcribePartial: (pcm) => ipcRenderer.invoke('transcribe:partial', pcm),
+  transcribeMine: (pcm) => ipcRenderer.invoke('transcribe:mine', pcm),
+  draft: (text, history, avoid) => ipcRenderer.invoke('draft', text, history, avoid),
+  phrase: (english, history) => ipcRenderer.invoke('phrase', english, history),
   suggest: (history) => ipcRenderer.invoke('suggest', history),
   questions: () => ipcRenderer.invoke('questions'),
   saveMeeting: (id, history) => ipcRenderer.invoke('meeting:save', id, history),

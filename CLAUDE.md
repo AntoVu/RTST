@@ -21,6 +21,10 @@ Original design spec (Claude-based, since replaced by Ollama; local only, `docs/
   `NUM_CTX` must be identical on every request, or Ollama reloads the model.
 - `pronounce.js`: rule-based Spanish-to-English respelling with stress. The small LLM was unreliable at this, so the model doesn't produce pronunciation.
 - `endpoint.js`: pause detection (`createEndpointer`) and the Listen button state machine (`createListenButton`: tap = auto, hold = until release, double-tap = locked). Shared by the renderer (plain script) and tests.
+- `speech-match.js`: fuzzy word-aligned score (0..1) between what the user's mic heard and a reply; plain script + tests (one top-level name, `speechMatch`).
+- Live preview: while recording, `maybePreview` sends the newest ≤20 s to `transcribe:partial` every 1.5 s; main.js runs all Whisper jobs through one queue and returns null for a preview when Whisper is busy.
+- Check my speech: a separate mic AudioContext with its own endpointer; only records while a `me` message is unsaid and no desktop recording is active. `said` is stored on history entries; DOM elements live in a WeakMap (history goes over IPC).
+- Refresh (↻) re-drafts with `avoid` = earlier drafts appended after the stable prompt prefix, at temperature 0.8. Typed English uses `buildPhraseRequest`.
 - `renderer.js`: audio capture (16 kHz AudioContext + ScriptProcessor), button wiring (pointer capture so a hold survives leaving the button), chat, sidebar, End meeting.
   `history` is a flat `[{ who: 'them'|'me', es, en }]` list; a draft adds a `me` placeholder with `es: null` to keep order.
 - `pronounce.js` is also loaded in the renderer as a plain script, so avoid reusing its top-level names in `renderer.js`.

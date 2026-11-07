@@ -55,13 +55,28 @@ const DRAFT_INSTRUCTIONS = `You help the user hold a live Spanish conversation. 
 - ${SPEAKING_RULES}
 - reply_es: the Spanish to say. reply_en: its English meaning.`;
 
-function buildDraftRequest(text, history, contextText, memoryText) {
+// avoid: earlier drafts for this message the user refreshed away. They go at the very end, after the stable prefix,
+// so a refresh still reuses the cache; temperature goes up for variety (it's a sampling option, so no model reload).
+function buildDraftRequest(text, history, contextText, memoryText, avoid = []) {
   const recent = formatHistory(history);
+  const others = avoid.filter(Boolean);
   return chat(
     `${DRAFT_INSTRUCTIONS}\n\n${background(contextText, memoryText)}`,
-    (recent ? `Conversation so far:\n${recent}\n\n` : '') + `Their latest message:\n${text}`,
-    0.3,
+    (recent ? `Conversation so far:\n${recent}\n\n` : '') + `Their latest message:\n${text}` +
+      (others.length ? `\n\nThe user rejected these replies. Write a new one that does NOT reuse their sentences: change the wording and sentence structure, or mention a different detail from the context, or add a short follow-up question.\n${others.map((s) => `- ${s}`).join('\n')}` : ''),
+    others.length ? 0.8 : 0.3,
   );
+}
+
+const PHRASE_INSTRUCTIONS = `You help the user hold a live Spanish conversation. The user typed, in English (or rough Spanish), something they want to say next. Write it as natural spoken Spanish they can read aloud, in the first person, keeping their meaning. Don't add facts or questions they didn't ask for.
+- Use the conversation so far to choose the right words, names, and tú/usted.
+- ${SPEAKING_RULES}
+- es: the Spanish to say. en: its English meaning.`;
+
+// The conversation goes first and the typed text last; there's no context or memory, so this prompt stays short.
+function buildPhraseRequest(english, history) {
+  const recent = formatHistory(history.slice(-12));
+  return chat(PHRASE_INSTRUCTIONS, (recent ? `Conversation so far:\n${recent}\n\n` : '') + `What the user wants to say:\n${english}`, 0.2);
 }
 
 const SUGGEST_INSTRUCTIONS = `You help the user hold a live Spanish conversation. Suggest 5 different things the user could say next: questions or comments that fit their context, goals and the conversation so far (for example follow-up questions about what the other person just said, or topics the context says to cover that haven't come up yet). Don't repeat what has already been said.
@@ -119,4 +134,4 @@ function stripSidebarQuestions(contextText) {
   return kept.join('\n');
 }
 
-module.exports = { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, formatHistory, parseSidebarQuestions, stripSidebarQuestions, MODEL, NUM_CTX };
+module.exports = { buildTranslateRequest, buildDraftRequest, buildPhraseRequest, buildSuggestRequest, buildSummaryRequest, formatHistory, parseSidebarQuestions, stripSidebarQuestions, MODEL, NUM_CTX };

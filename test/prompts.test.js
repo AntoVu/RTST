@@ -112,3 +112,25 @@ test('strip sidebar questions: section at the end, or no section at all', () => 
   assert.strictEqual(stripSidebarQuestions('# Me\nI am Sam.'), '# Me\nI am Sam.');
   assert.strictEqual(stripSidebarQuestions(''), '');
 });
+
+test('draft refresh: earlier replies go last (cache-friendly prefix) with higher temperature', () => {
+  const plain = buildDraftRequest('¿Tienes hermanos?', history, 'ctx', 'mem');
+  const again = buildDraftRequest('¿Tienes hermanos?', history, 'ctx', 'mem', ['Sí, tengo dos hermanas.']);
+  assert.strictEqual(again.messages[0].content, plain.messages[0].content);
+  assert.ok(again.messages[1].content.startsWith(plain.messages[1].content));
+  assert.match(again.messages[1].content, /rejected these replies[\s\S]*Sí, tengo dos hermanas\./);
+  assert.ok(again.options.temperature > plain.options.temperature);
+  assert.strictEqual(again.options.num_ctx, NUM_CTX);
+  assert.deepStrictEqual(buildDraftRequest('Hola', [], '', '', []), buildDraftRequest('Hola', [], '', ''));
+});
+
+test('phrase: English to say goes last, with recent conversation and the shared request shape', () => {
+  const { buildPhraseRequest } = require('../prompts.js');
+  const req = buildPhraseRequest('I have to leave early today', history);
+  assert.strictEqual(req.model, MODEL);
+  assert.strictEqual(req.think, false);
+  assert.strictEqual(req.options.num_ctx, NUM_CTX);
+  const msg = req.messages.at(-1).content;
+  assert.match(msg, /María[\s\S]*I have to leave early today$/);
+  assert.doesNotMatch(buildPhraseRequest('Hi', []).messages.at(-1).content, /Conversation/);
+});

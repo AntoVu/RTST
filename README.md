@@ -77,6 +77,10 @@ With Auto-listen on, mute other sounds on your PC (anything louder than the thre
 
 After you stop, Spanish text appears in about a second, the English shortly after, and the suggested reply a second or two later. The status line shows the exact timings.
 
+### Live preview
+
+While they're still talking, a faded bubble shows what the app has heard so far, with a rough English translation, updated about every 1.5 seconds. When they stop, the real message replaces it. Previews never delay the final transcription: if Whisper is busy, the preview is skipped. Turn it off under **Settings → Live preview** if your GPU struggles.
+
 ### Reading the reply
 
 ```
@@ -86,6 +90,20 @@ Your name is María, you're from Colombia, and you have two sisters.  ← what i
 ```
 
 Replies use simple, student-level Spanish, and numbers are written as words so you can read them aloud.
+
+Don't like a suggested reply? Click **↻** in its corner for a different one. The app remembers the replies you skipped, so it won't offer them again.
+
+### Say something of your own
+
+Type what you want to say in English in the box above the Listen button and press Enter. It appears as your message in simple Spanish, with pronunciation, using the conversation so far to choose words and tú/usted.
+
+### Check my speech
+
+Tick **Check my speech** to have the app listen to your microphone. When you read a reply aloud, it transcribes you and compares what you said with your newest unsaid replies. If it's close enough (60% by default, so a few mispronounced or missing words are fine), the reply turns a brighter green and gets a ✓ with what it heard. If not, it shows what it heard and the match percentage, with a **Count it as said** button.
+
+- The mic is ignored while the other person is being recorded, and only listens while there's a reply waiting to be said.
+- Use headphones if you can: on speakers, the mic also hears the call.
+- Change the mic sensitivity and how close counts under **Settings**.
 
 ### The sidebar: things to say
 
@@ -122,7 +140,7 @@ None of this slows replies down. Ollama reuses the processing for the unchanged 
 ## Tips
 
 - **Mute other audio.** The app hears everything your PC plays (music, videos, notification sounds), not just the call.
-- **Your own voice isn't captured.** Only your speaker output is recorded, not your microphone.
+- **Your own voice isn't translated.** The conversation comes from your speaker output. Your microphone is only used by **Check my speech**, and only to tick off your replies.
 - **Close memory-heavy apps** (games, lots of browser tabs) during calls if your PC has 16 GB of RAM or less.
 - **Use headphones if you like.** Capture works the same with headphones or speakers.
 

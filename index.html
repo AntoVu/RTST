@@ -48,9 +48,14 @@
 
       <footer>
         <div id="status" role="status"></div>
+        <form id="say-form" autocomplete="off">
+          <input id="say-input" placeholder="Type what you want to say, in English, and press Enter…" aria-label="What you want to say, in English">
+          <button>To Spanish</button>
+        </form>
         <div class="controls">
           <div id="meter" aria-hidden="true"><div id="level"></div></div>
           <label class="auto-toggle" title="Start listening by itself whenever audio plays louder than the speech threshold"><input type="checkbox" id="auto-listen"> Auto-listen</label>
+          <label class="auto-toggle" id="mic-toggle" title="Listen to your microphone and tick off a reply once you've said it (close enough counts)"><input type="checkbox" id="mic-check"> Check my speech <span id="mic-meter" aria-hidden="true"><span id="mic-level"></span></span></label>
           <button id="listen">Listen</button>
         </div>
       </footer>
@@ -70,6 +75,15 @@
       <label>Pause before auto-stop (seconds)
         <input id="silence" type="number" min="0.4" max="5" step="0.1">
       </label>
+      <label class="check"><input type="checkbox" id="live-preview"> Live preview: show what they're saying, translated, while they talk</label>
+      <label>Microphone threshold (Check my speech) <output id="mic-threshold-out"></output>
+        <input id="mic-threshold" type="range" min="0.005" max="0.1" step="0.005">
+        <small>Raise it if room noise sets off the speech check.</small>
+      </label>
+      <label>How close counts as said <output id="match-threshold-out"></output>
+        <input id="match-threshold" type="range" min="30" max="95" step="5">
+        <small>Lower is more forgiving. 60% allows a few mispronounced or missing words.</small>
+      </label>
       <label>Memory and meeting transcripts
         <span class="row"><small>memory.md and meetings/</small><button type="button" id="open-data">Open folder</button></span>
       </label>
@@ -84,11 +98,16 @@
     <div class="msg them"><div class="es"></div><div class="en pending">…</div></div>
   </template>
   <template id="me-tpl">
-    <div class="msg me"><div class="es pending">Drafting reply…</div><div class="pron"></div><div class="en"></div></div>
+    <div class="msg me">
+      <button class="refresh" hidden title="Suggest a different reply">↻</button>
+      <div class="es pending">Drafting reply…</div><div class="pron"></div><div class="en"></div>
+      <div class="heard"></div><button class="count-it">Count it as said</button>
+    </div>
   </template>
 
   <script src="endpoint.js"></script>
   <script src="pronounce.js"></script>
+  <script src="speech-match.js"></script>
   <script src="renderer.js"></script>
 </body>
 </html>

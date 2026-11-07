@@ -2,15 +2,19 @@ const { app, BrowserWindow, ipcMain, session, desktopCapturer, dialog, shell } =
 const fs = require('node:fs');
 const path = require('node:path');
 const { z } = require('zod');
-const { buildTranslateRequest, buildDraftRequest, buildSuggestRequest, buildSummaryRequest, parseSidebarQuestions, stripSidebarQuestions, MODEL } = require('./prompts.js');
+const { buildTranslateRequest, buildDraftRequest, buildPhraseRequest, buildSuggestRequest, buildSummaryRequest, parseSidebarQuestions, stripSidebarQuestions, MODEL } = require('./prompts.js');
 
 // ponytail: if turbo is too slow on the CPU fallback, switch to onnx-community/whisper-small
 const WHISPER_MODEL = 'onnx-community/whisper-large-v3-turbo';
 const OLLAMA = 'http://127.0.0.1:11434';
-const DEFAULTS = { threshold: 0.01, silenceMs: 1200, contextPath: null, autoListen: false };
+const DEFAULTS = {
+  threshold: 0.01, silenceMs: 1200, contextPath: null, autoListen: false,
+  livePreview: true, micCheck: false, micThreshold: 0.02, matchThreshold: 0.6,
+};
 const MEMORY_CHARS = 6000; // ponytail: only the newest memory is sent; re-summarize memory.md if old meetings matter
 
 const DraftSchema = z.object({ reply_es: z.string(), reply_en: z.string() });
+const PhraseSchema = z.object({ es: z.string(), en: z.string() });
 const SuggestSchema = z.object({ suggestions: z.array(z.object({ es: z.string(), en: z.string() })) });
 
 let win, asr, statusText = 'Starting…';
@@ -111,19 +115,44 @@ async function loadModels() {
   status(`Ready. Speech on ${whisper}, replies by ${MODEL}.`);
 }
 
+// Whisper runs one job at a time (one ONNX session on the GPU). Final transcriptions wait their turn;
+// live previews are dropped when anything else is running or waiting, so they never delay a real result.
+let asrBusy = 0, asrChain = Promise.resolve();
+function runAsr(pcm) {
+  if (!asr) return Promise.reject(new Error('Speech model is still loading.'));
+  asrBusy++;
+  const job = asrChain.then(async () => {
+    // chunking lets recordings longer than Whisper's 30 s window be transcribed in full
+    const out = await asr(pcm, { language: 'spanish', task: 'transcribe', chunk_length_s: 30, stride_length_s: 5 });
+    return out.text.trim();
+  });
+  asrChain = job.catch(() => {}).finally(() => { asrBusy--; });
+  return job;
+}
+
 ipcMain.handle('transcribe', async (_e, pcm) => {
-  if (!asr) throw new Error('Speech model is still loading.');
-  // chunking lets recordings longer than Whisper's 30 s window be transcribed in full
-  const out = await asr(pcm, { language: 'spanish', task: 'transcribe', chunk_length_s: 30, stride_length_s: 5 });
-  console.log(`[heard] ${out.text.trim()}`);
-  return out.text.trim();
+  const text = await runAsr(pcm);
+  console.log(`[heard] ${text}`);
+  return text;
+});
+
+// Live preview of a recording still in progress. Returns null (skipped) instead of queueing behind other work.
+ipcMain.handle('transcribe:partial', (_e, pcm) => (asr && !asrBusy ? runAsr(pcm) : null));
+
+// The user's own mic, for checking they said their reply.
+ipcMain.handle('transcribe:mine', async (_e, pcm) => {
+  const text = await runAsr(pcm);
+  console.log(`[you said] ${text}`);
+  return text;
 });
 
 // --- conversation ---
 ipcMain.handle('translate', (_e, text, history) => ollamaChat(buildTranslateRequest(text, history)));
 
-ipcMain.handle('draft', (_e, text, history) =>
-  ollamaJson(buildDraftRequest(text, history, promptContext(), readMemory()), DraftSchema));
+ipcMain.handle('draft', (_e, text, history, avoid) =>
+  ollamaJson(buildDraftRequest(text, history, promptContext(), readMemory(), avoid), DraftSchema));
+
+ipcMain.handle('phrase', (_e, english, history) => ollamaJson(buildPhraseRequest(english, history), PhraseSchema));
 
 ipcMain.handle('suggest', async (_e, history) =>
   (await ollamaJson(buildSuggestRequest(history, promptContext(), readMemory()), SuggestSchema)).suggestions.slice(0, 5));
@@ -150,12 +179,17 @@ const publicSettings = () => ({
   threshold: settings.threshold,
   silenceMs: settings.silenceMs,
   autoListen: settings.autoListen,
+  livePreview: settings.livePreview,
+  micCheck: settings.micCheck,
+  micThreshold: settings.micThreshold,
+  matchThreshold: settings.matchThreshold,
 });
 ipcMain.handle('settings:get', () => publicSettings());
 ipcMain.handle('settings:set', (_e, patch) => {
   if (typeof patch.threshold === 'number') settings.threshold = patch.threshold;
   if (typeof patch.silenceMs === 'number') settings.silenceMs = patch.silenceMs;
-  if (typeof patch.autoListen === 'boolean') settings.autoListen = patch.autoListen;
+  for (const k of ['autoListen', 'livePreview', 'micCheck']) if (typeof patch[k] === 'boolean') settings[k] = patch[k];
+  for (const k of ['micThreshold', 'matchThreshold']) if (typeof patch[k] === 'number') settings[k] = patch[k];
   saveSettings(settings);
   return publicSettings();
 });
